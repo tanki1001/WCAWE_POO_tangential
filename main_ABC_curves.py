@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 
 from operators_POO import Mesh, B1p, Loading, Simulation, import_frequency_sweep
-
+print("test")
 geometry1 = 'spherical'
 geometry2 = 'large'
 geometry  = geometry1 + '_'+ geometry2
