@@ -5,7 +5,6 @@ from scipy.sparse import csr_matrix
 from scipy.io import savemat
 from sympy import symbols, diff, lambdify
 import sympy as sy
-import pyvista
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
@@ -15,13 +14,13 @@ from abc import ABC, abstractmethod
 
 import gmsh
 from dolfinx import plot
+from basix.ufl import element
 from dolfinx.io import gmshio
 import dolfinx.mesh as msh
-from dolfinx.la import Norm
 from mpi4py import MPI
-from dolfinx.fem import Function, FunctionSpace, assemble, form, petsc, Constant
+from dolfinx.fem import Function, functionspace, assemble, form, petsc, Constant, assemble_scalar
 from ufl import (TestFunction, TrialFunction, TrialFunctions,
-                 dx, grad, div, inner, Measure, variable, FacetNormal, CellNormal)
+                 dx, grad, inner, Measure, variable, FacetNormal, CellNormal)
 import ufl
 import petsc4py
 from petsc4py import PETSc
@@ -107,13 +106,15 @@ class Mesh:
         mesh    = self.mesh
         submesh = self.submesh
     
-        P = FunctionSpace(mesh, (family, deg))
+        P1 = element(family, mesh.basix_cell(), deg)
+        P = functionspace(mesh, P1)
+
 
         if deg != 1:
             # This is linked to the fact on the subdomain, we will deal with the derivate of the function declared in the acoustic domain
             deg = deg - 1
-            
-        Q = FunctionSpace(submesh, (family, deg))
+        Q1 = element(family, submesh.basix_cell(), deg)
+        Q = functionspace(submesh, Q1)
     
         return P, Q
 
@@ -246,7 +247,7 @@ class Simulation:
             Psol1.x.array[:offset] = X.array_r[:offset]
             Qsol1.x.array[:(len(X.array_r) - offset)] = X.array_r[offset:]
         
-            Pav1[ii] = petsc.assemble.assemble_scalar(form(Psol1*ds(1)))
+            Pav1[ii] = assemble_scalar(form(Psol1*ds(1)))
             ksp.destroy()
             X.destroy()
             Z.destroy()
@@ -518,7 +519,7 @@ class Simulation:
             # Qsol1 can provide information in the q unknown which is the normal derivative of the pressure field along the boundary. Qsol1 is not used in this contribution.
         
         
-            Pav1[ii] = petsc.assemble.assemble_scalar(form(Psol1*ds(1)))
+            Pav1[ii] = assemble_scalar(form(Psol1*ds(1)))
             ksp.destroy()
             X.destroy()
             Z.destroy()
@@ -529,13 +530,13 @@ class Simulation:
 
     def compute_radiation_factor(self, freqvec, Pav):
         _, ds, _ = self.mesh.integral_mesure()
-        surfarea = petsc.assemble.assemble_scalar(form(1*ds(1)))
+        surfarea = assemble_scalar(form(1*ds(1)))
         k_output = 2*np.pi*freqvec/c0
         Z_center = 1j*k_output* Pav / surfarea
         return Z_center
 
     
-    def plot_radiation_factor(self, ax, freqvec, Pav, s = ''):
+    def plot_radiation_factor(self, ax, freqvec, Pav, s = '', save_fig = False):
         #_, ds, _ = self.mesh.integral_mesure()
         #surfarea = petsc.assemble.assemble_scalar(form(1*ds(1)))
         #k_output = 2*np.pi*freqvec/c0
@@ -554,6 +555,9 @@ class Simulation:
         ax.legend(loc='upper left')
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel(r'$\sigma$')
+        if save_fig :
+            plt.savefig("test.png")
+
     
         
        
@@ -677,6 +681,7 @@ class B1p(Operator):
         list_Z = self.list_Z
 
         mesh             = self.mesh.mesh
+        submesh             = self.mesh.submesh
         entity_maps_mesh = self.mesh.entity_maps_mesh
 
         # The following lines save the bug when a coefficient is equal to zero
@@ -685,7 +690,7 @@ class B1p(Operator):
         c_2 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[2](freq)))
         c_3 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[3](freq)))
         c_4 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
-        c_5 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
+        c_5 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
         
         a_00 = c_0*list_Z[0] + c_1*list_Z[1]
         a_01 = c_2*list_Z[2]
@@ -769,8 +774,8 @@ class B2p(Operator):
         e1  = inner(fx1*q, u)*dx1
         e2  = inner(q, u)*dx1
     
-        list_Z       = np.array([k, m, c, g1, g2, g3, g4, e1, e2])
-        list_coeff_Z = np.array([1, -k0**2, -1, 1, -k0**2, 4j*k0, 2, 4, 2j*k0])
+        list_Z       = np.array([k,      m,  c, g1,     g2,    g3, g4, e1,    e2])
+        list_coeff_Z = np.array([1, -k0**2, -1,  1, -k0**2, 4j*k0,  2,  4, 2j*k0])
     
         return list_Z, list_coeff_Z
 
@@ -795,10 +800,10 @@ class B2p(Operator):
         c_0 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[0](freq)))
         c_1 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[1](freq)))
         c_2 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[2](freq)))
-        c_3 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[3](freq)))
-        c_4 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
-        c_5 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
-        c_6 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
+        c_3 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[3](freq)))
+        c_4 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
+        c_5 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
+        c_6 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
         c_7 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[7](freq)))
         c_8 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[8](freq)))
         
@@ -828,7 +833,7 @@ class B2p(Operator):
         Zsp = csr_matrix((av, aj, ai))
         savemat('Z_'+ope_str+'_ref.mat', {'Z'+ope_str:Zsp})
 
-class B2p_cubic_specific(Operator):
+class B2p_tang(Operator):
 
     def __init__(self, mesh):
         '''
@@ -873,16 +878,18 @@ class B2p_cubic_specific(Operator):
         
         k = inner(grad(p), grad(v)) * dx
         m = inner(p, v) * dx
-        c = inner(q, v) * dx1
+        c = inner(q, v) * ds(3)
         #dp  = tangential_proj(grad(p), n) # dp/dn = grad(p) * n
         #ddp = tangential_proj(grad(dp[0] + dp[1] + dp[2]), n) # d^2p/dn^2 = grad(dp/dn) * n = grad(grad(p) * n) * n
         #ddp = tangential_proj(div(grad(p)), n)
-        rot_matrix = self.mesh.rotation_matrix()
+        #rot_matrix = self.mesh.rotation_matrix()
         ddp  = ufl.as_vector([p.dx(0).dx(0), p.dx(1).dx(1), p.dx(2).dx(2)])
+        
         #ddpt = rot_matrix*tangential_proj(ddp, n)
         ddpt = tangential_proj(ddp, n)
+        #ddpt = ddp
         
-        g1   = inner(ddpt[0] + ddpt[1] + ddpt[2] , u) * ds(3)
+        g1   = inner(ddpt[0] + ddpt[1]+ ddpt[2], u) * ds(3)
         #g1   = inner(ddpt[0] + ddpt[2] , u) * ds(3) #Actually if it works we can try with ddpt[0] that should be null
         #g1   = inner(ddpt[0] + ddpt[1] + ddpt[2] , u) * ds(3)
         
@@ -916,8 +923,8 @@ class B2p_cubic_specific(Operator):
         list_Z = self.list_Z
 
         mesh             = self.mesh.mesh
+        submesh             = self.mesh.submesh
         entity_maps_mesh = self.mesh.entity_maps_mesh
-        submesh      = self.mesh.submesh
 
         # The following lines save the bug when a coefficient is equal to zero
         c_0 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[0](freq)))
@@ -927,8 +934,8 @@ class B2p_cubic_specific(Operator):
         c_4 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
         c_5 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
         c_6 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
-        c_7 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[7](freq)))
-        c_8 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[8](freq)))
+        c_7 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[7](freq)))
+        c_8 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[8](freq)))
         
         a_00 = c_0*list_Z[0] + c_1*list_Z[1]
         a_01 = c_2*list_Z[2]
@@ -1016,8 +1023,9 @@ class B3p(Operator):
         g7  = inner(p, u)*ds(3)
 
         ddq = ufl.as_vector([q.dx(0).dx(0), q.dx(1).dx(1), q.dx(2).dx(2)])
-        
-        e0  = inner(ddq[0] + ddq[1] + ddq[2], u)*dx1
+        ddqt = tangential_proj(ddq, ns)
+        #ddqt = ddq
+        e0  = inner(ddqt[0] + ddqt[1] + ddqt[2], u)*dx1
         e1  = inner(fx1**2*q, u)*dx1
         e2  = inner(fx1*q, u)*dx1
         e3  = inner(q, u)*dx1
@@ -1041,6 +1049,7 @@ class B3p(Operator):
         list_Z = self.list_Z
 
         mesh             = self.mesh.mesh
+        submesh             = self.mesh.submesh
         entity_maps_mesh = self.mesh.entity_maps_mesh
 
         # The following lines solve the bug when a coefficient is equal to zero
@@ -1053,10 +1062,10 @@ class B3p(Operator):
         c_6  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
         c_7  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[7](freq)))
         c_8  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[8](freq)))
-        c_9  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[9](freq)))
-        c_10 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[10](freq)))
-        c_11 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[11](freq)))
-        c_12 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[12](freq)))
+        c_9  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[9](freq)))
+        c_10 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[10](freq)))
+        c_11 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[11](freq)))
+        c_12 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[12](freq)))
         
         a_00 = c_0*list_Z[0] + c_1*list_Z[1]
         a_01 = c_2*list_Z[2]
@@ -1107,6 +1116,7 @@ class Loading:
             list_coeff_F = np.array() : list of the coeffient
         '''
         mesh         = self.mesh.mesh
+        submesh         = self.mesh.submesh
         mesh_tags    = self.mesh.mesh_tags
         mesh_bc_tags = self.mesh.mesh_bc_tags
         xref         = self.mesh.xref
@@ -1119,7 +1129,7 @@ class Loading:
         v, u = TestFunction(P), TestFunction(Q)
         
         f    = inner(source, v) * ds(1)
-        zero = inner(Constant(mesh, PETSc.ScalarType(0)), u) * dx1
+        zero = inner(Constant(submesh, PETSc.ScalarType(0)), u) * dx1
         
         list_F       = np.array([f, zero])
         list_coeff_F = np.array([1, 0])
@@ -1140,9 +1150,10 @@ class Loading:
         list_F = self.list_F
 
         mesh   = self.mesh.mesh
+        submesh   = self.mesh.submesh
         
         c_0 = Constant(mesh, PETSc.ScalarType(list_coeff_F_j[0](freq)))
-        c_1 = Constant(mesh, PETSc.ScalarType(list_coeff_F_j[1](freq)))
+        c_1 = Constant(submesh, PETSc.ScalarType(list_coeff_F_j[1](freq)))
 
         f_0 = c_0*list_F[0]
         f_1 = c_1*list_F[1]
@@ -1447,7 +1458,7 @@ def harry_plotter(space, sol, str_value, show_edges = True):
 def tangential_proj(u, n):
     print(f"u : {u}")
     #print(f"u size: {u.ufl_shape[0]}")
-    proj_u = (ufl.Identity(u.ufl_shape[0]) - ufl.outer(n, n)) * u
+    proj_u = (ufl.Identity(n.ufl_shape[0]) - ufl.outer(n, n)) * u
     print(f"proj_u : {proj_u}")
     return proj_u
 

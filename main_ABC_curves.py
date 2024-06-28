@@ -12,13 +12,13 @@ from tqdm import tqdm
 
 from operators_POO import Mesh, B1p, Loading, Simulation, import_frequency_sweep
 print("test")
-geometry1 = 'spherical'
-geometry2 = 'large'
+geometry1 = 'cubic'
+geometry2 = 'small'
 geometry  = geometry1 + '_'+ geometry2
 
 if   geometry2 == 'small':
     side_box = 0.11
-    lc       = 8e-3
+    lc       = 6e-3
 elif geometry2 == 'large':
     side_box = 0.40
     lc       = 2e-2
@@ -78,31 +78,6 @@ else :
     freqvec1 = freqvec
     store_results(s, freqvec, PavFOM1)
 
-
-
-from operators_POO import B2p_cubic_specific
-
-mesh_.set_deg(2)
-
-ope2spe   = B2p_cubic_specific(mesh_)
-loading   = Loading(mesh_)
-simu2spe  = Simulation(mesh_, ope2spe, loading)
-
-
-#ope2.import_matrix(freq = 2000)
-from_data_b2pspe = False
-if from_data_b2pspe:
-    s1 = 'FOM_b2pspe'
-    s  = s1 + '_' + geometry
-    freqvec2spe, PavFOM2spe = import_frequency_sweep(s)
-else :
-    freqvec2spe = np.arange(1000,2001,20)
-    PavFOM2spe = simu2spe.FOM(freqvec2spe)
-    s1 = 'FOM_b2pspe'
-    s  = s1 + '_' + geometry
-    store_results(s, freqvec2spe, PavFOM2spe)
-
-
 from operators_POO import B2p
 
 mesh_.set_deg(2)
@@ -128,16 +103,38 @@ else :
     s  = s1 + '_' + geometry
     store_results(s, freqvec2, PavFOM2)
 
+from operators_POO import B2p_tang
+
+mesh_.set_deg(2)
+
+ope2spe   = B2p_tang(mesh_)
+loading   = Loading(mesh_)
+simu2spe  = Simulation(mesh_, ope2spe, loading)
+
+
+#ope2.import_matrix(freq = 2000)
+from_data_b2pspe = False
+if from_data_b2pspe:
+    s1 = 'FOM_b2pspe'
+    s  = s1 + '_' + geometry
+    freqvec2spe, PavFOM2spe = import_frequency_sweep(s)
+else :
+    freqvec2spe = freqvec
+    PavFOM2spe = simu2spe.FOM(freqvec2spe)
+    s1 = 'FOM_b2pspe'
+    s  = s1 + '_' + geometry
+    store_results(s, freqvec2spe, PavFOM2spe)
+
 
 from operators_POO import B3p
 
-mesh_.set_deg(2)
+mesh_.set_deg(3)
 
 ope3    = B3p(mesh_)
 loading = Loading(mesh_)
 
 simu3   = Simulation(mesh_, ope3, loading)
-freqvec3 = np.arange(1400, 1401, 20)
+freqvec3 = freqvec
 #PavFOM3 = simu3.FOM(freqvec3)
 
 
@@ -147,6 +144,7 @@ fig, ax = plt.subplots(figsize=(16,9))
 simu1.plot_radiation_factor(ax, freqvec1, PavFOM1, s = 'FOM_b1p')
 simu2.plot_radiation_factor(ax, freqvec2, PavFOM2,  s = 'FOM_b2p')
 simu2spe.plot_radiation_factor(ax, freqvec2spe, PavFOM2spe,  s = 'FOM_b2pspe')
+#simu3.plot_radiation_factor(ax, freqvec3, PavFOM3,  s = 'FOM_b3p')
 if comsol_data:
     ax.plot(frequency, results, c = 'black', label=r'$\sigma_{COMSOL}$')
     ax.legend()
@@ -154,6 +152,7 @@ if comsol_data:
 plot_analytical_result = True
 if plot_analytical_result:
     plot_analytical_result_sigma(ax, freqvec, radius)
+plt.savefig("test.png")
 
 
 from operators_POO import least_square_err, compute_analytical_radiation_factor
@@ -169,3 +168,5 @@ print(f'For lc = {lc} - L2_err(B2p) = {err_B2p}')
 err_B2p_tang = least_square_err(freqvec, Z_ana.real, freqvec2spe, simu2spe.compute_radiation_factor(freqvec2spe, PavFOM2spe).real)
 print(f'For lc = {lc} - L2_err(err_B2p_tang) = {err_B2p_tang}')
 
+#err_B3p = least_square_err(freqvec, Z_ana.real, freqvec3, simu3.compute_radiation_factor(freqvec3, PavFOM3).real)
+#print(f'For lc = {lc} - L2_err(err_B3p) = {err_B3p}')
