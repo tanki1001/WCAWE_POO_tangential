@@ -18,7 +18,7 @@ geometry  = geometry1 + '_'+ geometry2
 
 if   geometry2 == 'small':
     side_box = 0.11
-    lc       = 6e-3
+    lc       = 8e-3
 elif geometry2 == 'large':
     side_box = 0.40
     lc       = 2e-2

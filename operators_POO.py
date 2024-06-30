@@ -130,26 +130,26 @@ class Mesh:
         x_y = ufl.as_vector([0, 1, 0])
         x_z = ufl.as_vector([0, 0, 1])
 
-        theta = ufl.acos(inner(x_x, n))
-        phi   = ufl.acos(inner(x_y, n))
-        psi   = ufl.acos(inner(x_z, n))
+        alpha = ufl.acos(inner(x_x, n))
+        beta   = ufl.acos(inner(x_y, n))
+        gamma   = ufl.acos(inner(x_z, n))
 
-        return theta, phi, psi
+        return alpha, beta, gamma
         
 
     def rotation_matrix(self, sub = False):
-        theta, phi, psi = self.angle_rotation(sub)
+        alpha, beta, gamma = self.angle_rotation(sub)
         
-        cos_theta = ufl.cos(theta)
-        sin_theta = ufl.sin(theta)
-        cos_phi   = ufl.cos(phi)
-        sin_phi   = ufl.sin(phi)
-        cos_psi   = ufl.cos(psi)
-        sin_psi   = ufl.sin(psi)
+        cos_alpha = ufl.cos(alpha)
+        sin_alpha = ufl.sin(alpha)
+        cos_beta  = ufl.cos(beta)
+        sin_beta  = ufl.sin(beta)
+        cos_gamma = ufl.cos(gamma)
+        sin_gamma = ufl.sin(gamma)
         
-        rot_mat = ufl.as_matrix([[cos_psi*cos_phi, cos_psi*sin_phi*sin_theta - sin_psi*cos_theta, cos_psi*sin_phi*cos_theta+sin_psi*sin_theta],
-                                 [sin_psi*cos_phi, sin_psi*sin_phi*sin_theta + cos_psi*cos_theta, sin_psi*sin_phi*cos_theta-cos_psi*sin_theta],
-                                 [-sin_phi, cos_phi*sin_theta, cos_phi*cos_theta]])
+        rot_mat = ufl.as_matrix([[cos_gamma*cos_beta, cos_gamma*sin_beta*sin_alpha - sin_gamma*cos_alpha, cos_gamma*sin_beta*cos_alpha+sin_gamma*sin_alpha],
+                                 [sin_gamma*cos_beta, sin_gamma*sin_beta*sin_alpha + cos_gamma*cos_alpha, sin_gamma*sin_beta*cos_alpha-cos_gamma*sin_alpha],
+                                 [-sin_beta, cos_beta*sin_alpha, cos_beta*cos_alpha]])
         return rot_mat
 
     
@@ -882,11 +882,11 @@ class B2p_tang(Operator):
         #dp  = tangential_proj(grad(p), n) # dp/dn = grad(p) * n
         #ddp = tangential_proj(grad(dp[0] + dp[1] + dp[2]), n) # d^2p/dn^2 = grad(dp/dn) * n = grad(grad(p) * n) * n
         #ddp = tangential_proj(div(grad(p)), n)
-        #rot_matrix = self.mesh.rotation_matrix()
+        rot_matrix = self.mesh.rotation_matrix()
         ddp  = ufl.as_vector([p.dx(0).dx(0), p.dx(1).dx(1), p.dx(2).dx(2)])
         
-        #ddpt = rot_matrix*tangential_proj(ddp, n)
         ddpt = tangential_proj(ddp, n)
+        #ddpt = tangential_proj(ddp, n)
         #ddpt = ddp
         
         g1   = inner(ddpt[0] + ddpt[1]+ ddpt[2], u) * ds(3)
@@ -1456,10 +1456,10 @@ def harry_plotter(space, sol, str_value, show_edges = True):
         u_plotter.show(jupyter_backend='client')
 
 def tangential_proj(u, n):
-    print(f"u : {u}")
+    #print(f"u : {u}")
     #print(f"u size: {u.ufl_shape[0]}")
     proj_u = (ufl.Identity(n.ufl_shape[0]) - ufl.outer(n, n)) * u
-    print(f"proj_u : {proj_u}")
+    #print(f"proj_u : {proj_u}")
     return proj_u
 
 def tensor_norm(proj_u):
