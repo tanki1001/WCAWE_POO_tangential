@@ -109,10 +109,10 @@ class Mesh:
         P1 = element(family, mesh.basix_cell(), deg)
         P = functionspace(mesh, P1)
 
-
-        if deg != 1:
-            # This is linked to the fact on the subdomain, we will deal with the derivate of the function declared in the acoustic domain
-            deg = deg - 1
+        if True:
+            if deg != 1:
+                # This is linked to the fact on the subdomain, we will deal with the derivate of the function declared in the acoustic domain
+                deg = deg - 1
         Q1 = element(family, submesh.basix_cell(), deg)
         Q = functionspace(submesh, Q1)
     
@@ -321,12 +321,12 @@ class Simulation:
         list_coeff_F     = self.loading.list_coeff_F
         mesh             = self.mesh
         entity_maps_mesh = mesh.entity_maps_mesh
-        d_jZ = ope.deriv_coeff_Z(N)     # All the derivates of the Global matrix will be needed, they are computed here
-        d_jF = loading.deriv_coeff_F(N) # All the derivates of the froce vector will be needed, they are computed here
+        d_jZ = ope.deriv_coeff_Z(N)     # All the derivatives of the Global matrix will be needed, they are computed here
+        d_jF = loading.deriv_coeff_F(N) # All the derivatives of the froce vector will be needed, they are computed here
 
-        # The following lines assembled the 0th and the 1st derivates of the global matrix, and the 0th derivate of the force vector
+        # The following lines assembled the 0th and the 1st derivatives of the global matrix, and the 0th derivative of the force vector
         # evaluated at the interpolation frequency
-        # The global matrix and its first derivate are needed to construct each vector, that's why they are computed
+        # The global matrix and its first derivative are needed to construct each vector, that's why they are computed
         # outside of the loop
         Z_0 = ope.dZj(freq, d_jZ[0])      
         F_0 = loading.dFj(freq, d_jF[0]) 
@@ -882,7 +882,7 @@ class B2p_tang(Operator):
         #dp  = tangential_proj(grad(p), n) # dp/dn = grad(p) * n
         #ddp = tangential_proj(grad(dp[0] + dp[1] + dp[2]), n) # d^2p/dn^2 = grad(dp/dn) * n = grad(grad(p) * n) * n
         #ddp = tangential_proj(div(grad(p)), n)
-        rot_matrix = self.mesh.rotation_matrix()
+        #rot_matrix = self.mesh.rotation_matrix()
         ddp  = ufl.as_vector([p.dx(0).dx(0), p.dx(1).dx(1), p.dx(2).dx(2)])
         
         ddpt = tangential_proj(ddp, n)
@@ -923,17 +923,17 @@ class B2p_tang(Operator):
         list_Z = self.list_Z
 
         mesh             = self.mesh.mesh
-        submesh             = self.mesh.submesh
+        submesh          = self.mesh.submesh
         entity_maps_mesh = self.mesh.entity_maps_mesh
 
         # The following lines save the bug when a coefficient is equal to zero
         c_0 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[0](freq)))
         c_1 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[1](freq)))
         c_2 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[2](freq)))
-        c_3 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[3](freq)))
-        c_4 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
-        c_5 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
-        c_6 = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
+        c_3 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[3](freq)))
+        c_4 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
+        c_5 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
+        c_6 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
         c_7 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[7](freq)))
         c_8 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[8](freq)))
         
@@ -1049,19 +1049,19 @@ class B3p(Operator):
         list_Z = self.list_Z
 
         mesh             = self.mesh.mesh
-        submesh             = self.mesh.submesh
+        submesh          = self.mesh.submesh
         entity_maps_mesh = self.mesh.entity_maps_mesh
 
         # The following lines solve the bug when a coefficient is equal to zero
         c_0  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[0](freq)))
         c_1  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[1](freq)))
         c_2  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[2](freq)))
-        c_3  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[3](freq)))
-        c_4  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
-        c_5  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
-        c_6  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
-        c_7  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[7](freq)))
-        c_8  = Constant(mesh, PETSc.ScalarType(list_coeff_Z_j[8](freq)))
+        c_3  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[3](freq)))
+        c_4  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[4](freq)))
+        c_5  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[5](freq)))
+        c_6  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[6](freq)))
+        c_7  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[7](freq)))
+        c_8  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[8](freq)))
         c_9  = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[9](freq)))
         c_10 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[10](freq)))
         c_11 = Constant(submesh, PETSc.ScalarType(list_coeff_Z_j[11](freq)))

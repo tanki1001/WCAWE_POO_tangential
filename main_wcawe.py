@@ -60,8 +60,8 @@ else :
 
 from operators_POO import SVD_ortho
 
-list_N = [7, 8]
-list_freq = [750, 1500]
+list_N = [10]
+list_freq = [1000]
 t1   = time()
 Vn   = simu1.merged_WCAWE(list_N, list_freq)
 t2   = time()
@@ -108,7 +108,7 @@ else :
     s = s1 + '_' + geometry
     store_results(s, freqvec2tang, PavFOM2tang)
 
-list_N = [5, 5]
+list_N = [10, 10]
 list_freq = [750, 1500]
 
 t1   = time()
@@ -132,6 +132,7 @@ if True:
     simu2tang.plot_radiation_factor(ax, freqvec2tang, PavFOM2tang, s = 'FOM_b2ptang')
     simu2tang.plot_radiation_factor(ax, freqvec2tang, PavWCAWE2tang, s = 'WCAWE2tang')
     ax.set_ylim(0, 1.5)
+    plt.title(f'list_N = {list_N}')
     plt.savefig("WCAWE_b2p_tang.png")
 
 from operators_POO import B2p
@@ -154,7 +155,7 @@ else :
     s = s1 + '_' + geometry
     store_results(s, freqvec, PavFOM2)
 
-list_N = [5, 5]
+list_N = [10, 10]
 list_freq = [750, 1500]
 
 t1   = time()
@@ -166,7 +167,7 @@ Vn = SVD_ortho(Vn)
 t3 = time()
 print(f'SVD CPU time  : {t3 -t2}')
 PavWCAWE2 = simu2.moment_matching_MOR(Vn, freqvec2)
-t4       = time()
+t4 = time()
 print(f'Whole CPU time  : {t4 -t1}')
 
 
@@ -178,5 +179,6 @@ if True:
     simu2.plot_radiation_factor(ax, freqvec2, PavFOM2, s = 'FOM_b2p')
     simu2.plot_radiation_factor(ax, freqvec2, PavWCAWE2, s = 'WCAWE2')
     ax.set_ylim(0, 1.5)
+    plt.title(f'list_N = {list_N}')
     plt.savefig("WCAWE_b2p.png")
 
