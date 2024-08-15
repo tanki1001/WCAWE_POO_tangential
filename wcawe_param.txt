@@ -1,0 +1,28 @@
+% Parameters WCAWE :
+
+Dir :
+tangential
+
+Geometry :
+cubic
+
+Case :
+small
+
+Operator :
+b2p
+
+Lc :
+0.008
+
+DimP :
+4
+
+DimQ :
+4
+
+List frequencies :
+1000
+
+List N :
+10

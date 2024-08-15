@@ -80,7 +80,7 @@ else :
 
 from operators_POO import B2p
 
-mesh_.set_deg(2)
+mesh_.set_deg(3)
 
 ope2           = B2p(mesh_)
 list_coeff_Z_j = ope2.deriv_coeff_Z(0)
@@ -105,7 +105,7 @@ else :
 
 from operators_POO import B2p_tang
 
-mesh_.set_deg(2)
+mesh_.set_deg(3)
 
 ope2spe   = B2p_tang(mesh_)
 loading   = Loading(mesh_)
@@ -113,7 +113,7 @@ simu2spe  = Simulation(mesh_, ope2spe, loading)
 
 
 #ope2.import_matrix(freq = 2000)
-from_data_b2pspe = True
+from_data_b2pspe = False
 if from_data_b2pspe:
     s1 = 'FOM_b2pspe'
     s  = s1 + '_' + geometry
@@ -135,7 +135,7 @@ loading = Loading(mesh_)
 
 simu3   = Simulation(mesh_, ope3, loading)
 freqvec3 = freqvec
-PavFOM3 = simu3.FOM(freqvec3)
+#PavFOM3 = simu3.FOM(freqvec3)
 
 
 from operators_POO import plot_analytical_result_sigma
@@ -144,7 +144,7 @@ fig, ax = plt.subplots(figsize=(16,9))
 simu1.plot_radiation_factor(ax, freqvec1, PavFOM1, s = 'FOM_b1p')
 simu2.plot_radiation_factor(ax, freqvec2, PavFOM2,  s = 'FOM_b2p')
 simu2spe.plot_radiation_factor(ax, freqvec2spe, PavFOM2spe,  s = 'FOM_b2pspe')
-simu3.plot_radiation_factor(ax, freqvec3, PavFOM3,  s = 'FOM_b3p')
+#simu3.plot_radiation_factor(ax, freqvec3, PavFOM3,  s = 'FOM_b3p')
 if comsol_data:
     ax.plot(frequency, results, c = 'black', label=r'$\sigma_{COMSOL}$')
     ax.legend()
@@ -152,6 +152,7 @@ if comsol_data:
 plot_analytical_result = True
 if plot_analytical_result:
     plot_analytical_result_sigma(ax, freqvec, radius)
+ax.set_ylim(0,2)
 plt.savefig("test.png")
 
 
@@ -168,5 +169,5 @@ print(f'For lc = {lc} - L2_err(B2p) = {err_B2p}')
 err_B2p_tang = least_square_err(freqvec, Z_ana.real, freqvec2spe, simu2spe.compute_radiation_factor(freqvec2spe, PavFOM2spe).real)
 print(f'For lc = {lc} - L2_err(err_B2p_tang) = {err_B2p_tang}')
 
-err_B3p = least_square_err(freqvec, Z_ana.real, freqvec3, simu3.compute_radiation_factor(freqvec3, PavFOM3).real)
-print(f'For lc = {lc} - L2_err(err_B3p) = {err_B3p}')
+#err_B3p = least_square_err(freqvec, Z_ana.real, freqvec3, simu3.compute_radiation_factor(freqvec3, PavFOM3).real)
+#print(f'For lc = {lc} - L2_err(err_B3p) = {err_B3p}')
