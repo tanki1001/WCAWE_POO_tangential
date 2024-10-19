@@ -16,13 +16,14 @@ Lc :
 0.008
 
 DimP :
-4
+2
 
 DimQ :
-4
+2
 
 List frequencies :
-1000
+1750
+
 
 List N :
-10
+5
